@@ -2289,7 +2289,7 @@ async function scStartLiveCapture(){
     window._hcLiveWriteQueue=Promise.resolve();
     rec.ondataavailable=e=>{if(e.data?.size){const id=String(window._hcLiveChunkSeq++).padStart(8,'0');window._hcLiveWriteQueue=window._hcLiveWriteQueue.then(()=>scLivePutChunk(id,e.data)).catch(console.warn)}};
     rec.onstop=async()=>{try{await window._hcLiveWriteQueue;const fin=await scLiveFinalize();if(fin){(state.scouting.events||[]).forEach(ev=>{if(ev.liveCaptureId===window._hcLiveCaptureId){ev.localVideoKey=fin.key;ev.videoUrl='';ev.videoName='Captura directa local'}});state.scouting.videoName='Captura directa local';state.scouting.videoUrl='';scSave();scRender();const st=document.getElementById('scVideoStatus');if(st)st.textContent='✓ Captura local guardada. Los cortes ya no dependen de YouTube.';setTimeout(()=>{try{scExportLiveCapture()}catch(_){}},50)}}catch(e){alert('No se pudo finalizar la captura local: '+(e.message||e))}try{stream.getTracks().forEach(t=>t.stop())}catch(_){}const pv2=document.getElementById('scVideoPreview');if(pv2&&pv2.srcObject===stream)pv2.srcObject=null;window._hcLiveRecorder=null;window._hcLiveStream=null;const b=document.getElementById('scLiveCaptureBtn');if(b)b.textContent='🔴 Capturar directo'};
-    stream.getVideoTracks()[0].addEventListener('ended',()=>{if(rec.state!=='inactive')rec.stop()});rec.start(1000);
+    stream.getVideoTracks()[0].addEventListener('ended',()=>{if(rec.state!=='inactive')rec.stop()});rec.start(1000);scStart();
     const b=document.getElementById('scLiveCaptureBtn');if(b)b.textContent='⏹️ Parar y guardar captura';const st=document.getElementById('scVideoStatus');if(st)st.textContent='🔴 Capturando retransmisión en local…';
   }catch(e){try{stream?.getTracks().forEach(t=>t.stop())}catch(_){}if(!/AbortError|NotAllowedError/i.test(String(e?.message||e)))alert('No se pudo iniciar la captura: '+(e.message||e))}
 }
@@ -2568,7 +2568,12 @@ function scMark(i){
 async function scPlayCut(i){
   const x=state.scouting.events[i];if(!x)return;
   clearInterval(window._scCutTimer);clearTimeout(window._scDrawResumeTimer);
-  if(!window._hcYTPlayer && !x.localVideoKey && x.videoUrl){try{await scLoadYouTubeUrl(x.videoUrl);}catch(e){alert('No se pudo cargar el vídeo asociado al corte.');return;}}
+  if(!window._hcYTPlayer && !x.localVideoKey && x.videoUrl){
+    const currentV=$('scVideoPreview');
+    if(!currentV||(!currentV.src && !currentV.srcObject)){
+      try{await scLoadYouTubeUrl(x.videoUrl);}catch(e){alert('No se pudo cargar el vídeo asociado al corte.');return;}
+    }
+  }
   window._scReviewReturnTime=scTime();window._scReviewWasPlaying=!!state.scouting.running;window._scReviewing=true;
   const btn=$('scReturnToLive');if(btn)btn.style.display='inline-block';
   const start=Number(x.startSeconds??Math.max(0,(x.seconds||0)-(x.pre||0))), end=Number(x.endSeconds??((x.seconds||0)+(x.post||0)));
