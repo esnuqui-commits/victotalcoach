@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Handball Coach V15.6 — Planificación y valoraciones</title>
+<title>Handball Coach V15.6 TEST-MODO-ACTIVO — Planificación y valoraciones</title>
 <style>
 :root{--bg:#f4f6f8;--card:#fff;--text:#18202a;--muted:#697586;--accent:#1769aa;--danger:#c62828;--line:#e3e7eb}
 *{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
@@ -1622,10 +1622,10 @@ function hcScProjectSnapshot(){const s=state.scouting||{};return {teamA:s.teamA|
 function hcScUpdateProjectBar(){const e=document.getElementById('hcScProjectName');if(e)e.textContent=hcScCurrentProject?hcScCurrentProject.name:'Ninguno abierto';['hcScSaveProject','hcScCloseProject'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=!hcScCurrentProject});const del=document.getElementById('hcScDeleteProject');if(del)del.disabled=!!hcScCurrentProject;const n=document.getElementById('hcScProjectBar');if(n)n.classList.toggle('is-open',!!hcScCurrentProject)}
 async function hcScAutosaveProject(){if(!hcScCurrentProject)return;try{hcScCurrentProject={...hcScCurrentProject,data:hcScProjectSnapshot(),updatedAt:new Date().toISOString()};await hcScProjectPut(hcScCurrentProject);hcScUpdateProjectBar()}catch(e){console.warn(e)}}
 async function hcScSaveVideoForProject(file){if(!hcScCurrentProject||!file)return;try{const p={...hcScCurrentProject,videoBlob:file,videoName:file.name,updatedAt:new Date().toISOString()};p.data={...(p.data||{}),videoName:file.name};await hcScProjectPut(p);hcScCurrentProject=p}catch(e){console.warn('No se pudo guardar el vídeo del proyecto',e)}}
-async function hcScLoadProjectVideo(p){const v=document.getElementById('scVideoPreview');if(!v)return;if(p?.data?.videoUrl){try{await scLoadYouTubeUrl(p.data.videoUrl);return;}catch(e){console.warn(e)}}if(!p?.videoBlob)return;try{if(window._scVideoObjectUrl)URL.revokeObjectURL(window._scVideoObjectUrl);window._scVideoObjectUrl=URL.createObjectURL(p.videoBlob);v.src=window._scVideoObjectUrl;v.style.display='block';document.getElementById('scVideoEmpty')?.style.setProperty('display','none');document.getElementById('scVideoStatus')?.replaceChildren(document.createTextNode('Vídeo del proyecto: '+(p.data?.videoName||p.videoName||'')));v.load()}catch(e){console.warn(e)}}
+async function hcScLoadProjectVideo(p){const v=document.getElementById('scVideoPreview');if(!v)return;if(p?.videoBlob){try{if(window._scVideoObjectUrl)URL.revokeObjectURL(window._scVideoObjectUrl);window._scVideoObjectUrl=URL.createObjectURL(p.videoBlob);v.src=window._scVideoObjectUrl;v.style.display='block';document.getElementById('scVideoEmpty')?.style.setProperty('display','none');document.getElementById('scVideoStatus')?.replaceChildren(document.createTextNode('Vídeo del proyecto: '+(p.data?.videoName||p.videoName||'')));v.load();return}catch(e){console.warn('Error loading local video, trying backup...',e)}}if(p?.data?.videoUrl){try{await scLoadYouTubeUrl(p.data.videoUrl);return}catch(e){console.warn(e)}}}
 function hcScRequireProject(){if(hcScCurrentProject)return true;alert('Antes de empezar a cortar debes crear o abrir un proyecto de scouting.');return false}
 async function hcScNewProject(){const name=(prompt('Nombre del nuevo proyecto de scouting:')||'').trim();if(!name)return;if(hcScCurrentProject)await hcScAutosaveProject();const id='scp_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);const buttons=(state.scouting.buttons||[]).map(x=>({...x}));const links=(state.scouting.links||[]).map(x=>({...x}));hcScCurrentProject={id,name,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),data:{teamA:'',teamB:'',events:[],buttons,links,videoName:'',videoKey:'',videoUrl:''}};state.scouting={...state.scouting,teamA:'',teamB:'',events:[],buttons,links,running:false,startedAt:0,elapsed:0,videoName:'',videoKey:''};await hcScProjectPut(hcScCurrentProject);hcScUpdateProjectBar();scRender();scUpdateClock()}
-async function hcScOpenProject(){const all=(await hcScProjectAll()).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));if(!all.length)return alert('Todavía no hay proyectos guardados.');const labels=all.map((p,i)=>(i+1)+'. '+p.name).join('\n');const ans=prompt('Escribe el número del proyecto que quieres abrir:\n\n'+labels);const idx=Number(ans)-1;if(!Number.isInteger(idx)||!all[idx])return;if(hcScCurrentProject)await hcScAutosaveProject();const p=all[idx],d=p.data||{};hcScCurrentProject=p;state.scouting={...state.scouting,...d,events:(d.events||[]).map(x=>({...x})),buttons:(d.buttons||[]).map(x=>({...x})),links:(d.links||[]).map(x=>({...x})),running:false,startedAt:0,elapsed:0};scRenderTeamSelectors();await hcScLoadProjectVideo(p);hcScUpdateProjectBar();scRender();scUpdateClock();scSave()}
+async function hcScOpenProject(){const all=(await hcScProjectAll()).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));if(!all.length)return alert('Todavía no hay proyectos guardados.');const labels=all.map((p,i)=>(i+1)+'. '+p.name).join('\n');const ans=prompt('Escribe el número del proyecto que quieres abrir:\n\n'+labels);const idx=Number(ans)-1;if(!Number.isInteger(idx)||!all[idx])return;if(hcScCurrentProject)await hcScAutosaveProject();const p=all[idx],d=p.data||{};hcScCurrentProject=p;state.scouting={...state.scouting,...d,events:(d.events||[]).map(x=>{const y={...x};if(x.localVideoKey)y.videoUrl='';return y}),buttons:(d.buttons||[]).map(x=>({...x})),links:(d.links||[]).map(x=>({from:Number(x.from),to:Number(x.to)})),running:false,startedAt:0,elapsed:0};scRenderTeamSelectors();await hcScLoadProjectVideo(p);hcScUpdateProjectBar();scRender();scUpdateClock();scSave()}
 async function hcScCloseProject(){if(!hcScCurrentProject)return;await hcScAutosaveProject();hcScCurrentProject=null;state.scouting={...state.scouting,events:[],running:false,startedAt:0,elapsed:0,videoName:'',videoKey:''};const v=document.getElementById('scVideoPreview');if(v){v.pause();v.removeAttribute('src');v.load();v.style.display='none'}scRemoveYouTube();if(v){}if(window._scVideoObjectUrl){URL.revokeObjectURL(window._scVideoObjectUrl);window._scVideoObjectUrl=null}hcScUpdateProjectBar();scRender();scUpdateClock()}
 async function hcScManualSave(){if(!hcScCurrentProject)return alert('Primero crea o abre un proyecto.');await hcScAutosaveProject();alert('Proyecto guardado: '+hcScCurrentProject.name)}
 async function hcScDeleteProject(){
@@ -1933,6 +1933,7 @@ function scRenameCutsByCategory(buttonName){
 }
 
 function scRender(){
+  if(!state.scouting.videoUrl) scRemoveYouTube();
  const b=$('scButtons'); if(!b)return;
  scRenderTemplates();
  const buttons=state.scouting.buttons||[];
@@ -2211,7 +2212,13 @@ function scEnsureYouTubeApi(){
 function scRemoveYouTube(){
   try{if(window._hcYTPlayer&&typeof window._hcYTPlayer.destroy==='function')window._hcYTPlayer.destroy();}catch(e){}
   window._hcYTPlayer=null;window._hcYTCurrentTime=0;window._hcYTPlaying=false;
-  const f=document.getElementById('scYouTubeFrame');if(f)f.remove();
+  const wrap=document.querySelector('#scouting .sc-video-wrap');
+  if(wrap){
+    const f=document.getElementById('scYouTubeFrame');if(f)f.remove();
+    wrap.querySelectorAll('.sc-youtube-frame').forEach(el=>el.remove());
+    wrap.querySelectorAll('iframe[src*="youtube.com"], iframe[src*="youtu.be"]').forEach(el=>el.remove());
+  }
+  document.querySelectorAll('iframe[src*="youtube.com"], iframe[src*="youtu.be"]').forEach(el=>el.remove());
 }
 async function scLoadYouTubeUrl(url){
   const id=scGetYouTubeId(url);if(!id){alert('La URL no parece ser un enlace válido de YouTube.');return false;}
@@ -5951,9 +5958,11 @@ details.card>summary{padding:2px 0;list-style:none}details.card>summary::-webkit
     const video=v();
     if(window._hcScMainStream){window._hcScMainStream.getTracks().forEach(t=>t.stop());window._hcScMainStream=null;}
     if(video&&video.srcObject)video.srcObject=null;
+    scRemoveYouTube();
   }
   function showMain(msg,name){
     const video=v(); if(!video)return;
+    scRemoveYouTube();
     video.style.display='block';
     const empty=document.getElementById('scVideoEmpty'); if(empty)empty.style.display='none';
     if(st())st().textContent=msg;
@@ -5994,7 +6003,7 @@ details.card>summary{padding:2px 0;list-style:none}details.card>summary::-webkit
       if(type==='rear'){await camera('environment','Cámara trasera');return;}
       if(type==='front'){await camera('user','Cámara delantera');return;}
       if(type==='capture'){await capture();return;}
-      if(type==='youtube'){const url=(prompt('Pega la URL de YouTube:')||'').trim();if(url)await scLoadYouTubeUrl(url);return;}
+      if(type==='youtube'){const url=(prompt('Pega la URL de YouTube:')||'').trim();if(url){const activeLocal=v()&& (v().src || v().srcObject);if(activeLocal && !confirm('Tienes una fuente local activa. ¿Quieres cambiar a YouTube ahora o solo guardar la URL como respaldo? (Aceptar para cambiar, Cancelar para solo guardar)')){state.scouting.videoUrl=url;scSave();alert('URL guardada como respaldo.');}else{await scLoadYouTubeUrl(url);}}return;}
     }catch(err){if(st())st().textContent='No se pudo activar esta fuente: '+(err.message||err);}
   });
 })();
@@ -6939,23 +6948,24 @@ setInterval(()=>{try{addAdminToHome();renderBar()}catch(e){}},1500);
     try{
       let current=null;try{current=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
       if(score(current)>0)return;
-      const r=await fetch('./VICTOR.json',{cache:'no-store'});if(!r.ok)return;
-      const backup=await r.json();const main=backup&&backup.main;
-      if(score(main)<=0||score(main)<=score(current))return;
-      localStorage.setItem(KEY,JSON.stringify(main));
-      if(Array.isArray(backup.matches)&&backup.matches.length)await putAll('matches',backup.matches);
-      else if(Array.isArray(main.matches)&&main.matches.length)await putAll('matches',main.matches);
-      if(Array.isArray(backup.evaluations)&&backup.evaluations.length)await putAll('evaluations',backup.evaluations);
-      else if(Array.isArray(main.evaluations)&&main.evaluations.length)await putAll('evaluations',main.evaluations);
-      if(typeof state!=='undefined'){
-        state=main;
-        state.matches=Array.isArray(backup.matches)?backup.matches:(Array.isArray(main.matches)?main.matches:[]);
-        state.evaluations=Array.isArray(backup.evaluations)?backup.evaluations:(Array.isArray(main.evaluations)?main.evaluations:[]);
-      }
-      try{localStorage.setItem('VICTOTALCOACH_AUTO_RECOVERED_FROM_VICTOR','2026-09-05')}catch(e){}
-      if(typeof render==='function')render();
-      if(typeof initIndependentData==='function'){independentDataReady=true;independentDataLoading=null;}
-      console.log('VICTOTALCOACH: datos recuperados automáticamente desde VICTOR.json');
+      // La recuperación automática desde VICTOR.json ha sido desactivada para evitar errores 404 en el servidor.
+      // const r=await fetch('./VICTOR.json',{cache:'no-store'});if(!r.ok)return;
+      // const backup=await r.json();const main=backup&&backup.main;
+      // if(score(main)<=0||score(main)<=score(current))return;
+      // localStorage.setItem(KEY,JSON.stringify(main));
+      // if(Array.isArray(backup.matches)&&backup.matches.length)await putAll('matches',backup.matches);
+      // else if(Array.isArray(main.matches)&&main.matches.length)await putAll('matches',main.matches);
+      // if(Array.isArray(backup.evaluations)&&backup.evaluations.length)await putAll('evaluations',backup.evaluations);
+      // else if(Array.isArray(main.evaluations)&&main.evaluations.length)await putAll('evaluations',main.evaluations);
+      // if(typeof state!=='undefined'){
+      //   state=main;
+      //   state.matches=Array.isArray(backup.matches)?backup.matches:(Array.isArray(main.matches)?main.matches:[]);
+      //   state.evaluations=Array.isArray(backup.evaluations)?backup.evaluations:(Array.isArray(main.evaluations)?main.evaluations:[]);
+      // }
+      // try{localStorage.setItem('VICTOTALCOACH_AUTO_RECOVERED_FROM_VICTOR','2026-09-05')}catch(e){}
+      // if(typeof render==='function')render();
+      // if(typeof initIndependentData==='function'){independentDataReady=true;independentDataLoading=null;}
+      // console.log('VICTOTALCOACH: datos recuperados automáticamente desde VICTOR.json');
     }catch(e){console.warn('Recuperación automática no disponible:',e)}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(recover,250));else setTimeout(recover,250);
